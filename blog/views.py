@@ -42,10 +42,10 @@ def index(request):
                              .annotate(count_likes=Count('likes', distinct=True),
                                        comments_amount=Count('comments', distinct=True))\
                              .order_by('-count_likes')[:5]
-    
-    most_fresh_posts = Post.objects.prefetch_related('author')\
-                           .annotate(comments_amount=Count('comments', distinct=True))\
-        .order_by('-published_at')[:5]
+    print(most_popular_posts[0].comments_amount)
+
+    fresh_posts = Post.objects.prefetch_related('author').order_by('published_at')
+    most_fresh_posts = list(fresh_posts)[-5:]
 
     most_popular_tags = Tag.objects.annotate(count_tags=Count('posts')).order_by('-count_tags')[:5]
 
@@ -86,9 +86,7 @@ def post_detail(request, slug):
 
     most_popular_tags = Tag.objects.annotate(count_tags=Count('posts')).order_by('-count_tags')[:5]
 
-    most_popular_posts = Post.objects.annotate(count_likes=Count('likes', distinct=True),
-                                               comments_amount=Count('comments', distinct=True))\
-                             .order_by('-count_likes')[:5]
+    most_popular_posts = Post.objects.annotate(count_likes=Count('likes')).order_by('-count_likes')[:5]
 
     context = {
         'post': serialized_post,
@@ -105,11 +103,9 @@ def tag_filter(request, tag_title):
 
     most_popular_tags = Tag.objects.annotate(count_tags=Count('posts')).order_by('-count_tags')[:5]
 
-    most_popular_posts = Post.objects.annotate(count_likes=Count('likes', distinct=True),
-                                               comments_amount=Count('comments', distinct=True))\
-                             .order_by('-count_likes')[:5]
-                             
-    related_posts = tag.posts.annotate(comments_amount=Count('comments', distinct=True))[:20]
+    most_popular_posts = Post.objects.annotate(count_likes=Count('likes')).order_by('-count_likes')[:5]
+
+    related_posts = tag.posts.all()[:20]
 
     context = {
         'tag': tag.title,
