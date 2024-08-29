@@ -2,6 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.db.models import Count
+from django.db.models import Prefetch
 
 
 class PostQuerySet(models.QuerySet):
@@ -22,6 +23,10 @@ class PostQuerySet(models.QuerySet):
         for post in self:
             post.comments__count = count_for_id[post.id]
         return self
+    
+    def prefetch_related_author(self):
+        prefetch_related_author = self.prefetch_related('author', Prefetch('tags', queryset=Tag.objects.popular()))
+        return prefetch_related_author
 
 
 class Post(models.Model):
@@ -30,8 +35,6 @@ class Post(models.Model):
     slug = models.SlugField("Название в виде url", max_length=200)
     image = models.ImageField("Картинка")
     published_at = models.DateTimeField("Дата и время публикации")
-
-    objects = PostQuerySet.as_manager()
 
     author = models.ForeignKey(
         User,
@@ -44,6 +47,8 @@ class Post(models.Model):
     )
     tags = models.ManyToManyField("Tag", related_name="posts", verbose_name="Теги")
 
+    objects = PostQuerySet.as_manager()
+
     def __str__(self):
         return self.title
 
@@ -53,7 +58,7 @@ class Post(models.Model):
     class Meta:
         ordering = ["-published_at"]
         verbose_name = "пост"
-        verbose_name_plural = "посты"
+        verbose_name_plural = "посты"  
 
 
 class TagQuerySet(models.QuerySet):
