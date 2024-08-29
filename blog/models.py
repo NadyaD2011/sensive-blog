@@ -10,7 +10,7 @@ class PostQuerySet(models.QuerySet):
         return posts_at_year
 
     def popular(self):
-        popular_posts = self.prefetch_related('tags').annotate(Count('likes')).order_by('-likes__count')
+        popular_posts = self.annotate(Count('likes')).order_by('-likes__count')
         return popular_posts
 
     def fresh(self):
@@ -23,7 +23,7 @@ class PostQuerySet(models.QuerySet):
         ids_and_comments = posts_with_comments.values_list('id', 'comments__count')
         count_for_id = dict(ids_and_comments)
         for post in self:
-            post.comments_count = count_for_id[post.id]
+            post.comments__count = count_for_id[post.id]
         return self
 
 
