@@ -12,40 +12,45 @@ def serialize_post_optimized(post):
         "image_url": post.image.url if post.image else None,
         "published_at": post.published_at,
         "slug": post.slug,
-        'first_tag_title': post.tags.all()[0].title,
+        "tags": [serialize_tag(tag) for tag in post.tags.popular()],
+        "first_tag_title": post.tags.popular()[0].title,
     }
 
 
 def serialize_tag(tag):
     return {
         "title": tag.title,
-        "posts_with_tag": Post.objects.filter(tags=tag).count(),
+        # "posts_with_tag": Post.objects.filter(tags=tag).count(),
     }
 
 
 def index(request):
 
-    most_popular_posts = Post.objects.annotate(count_likes=Count('likes')).order_by('-count_likes')[:5]
+    most_popular_posts = Post.objects.popular()[:5]
     most_popular_posts_ids = [post.id for post in most_popular_posts]
-    posts_with_comments = Post.objects.filter(id__in=most_popular_posts_ids).annotate(comments_count=Count('comments'))
-    ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+    posts_with_comments = Post.objects.filter(id__in=most_popular_posts_ids).annotate(
+        comments_count=Count("comments")
+    )
+    ids_and_comments = posts_with_comments.values_list("id", "comments_count")
     count_for_id = dict(ids_and_comments)
 
     for post in most_popular_posts:
         post.comments_count = count_for_id[post.id]
 
-    most_fresh_posts = Post.objects.annotate(comments_amount=Count('comments')).order_by('-published_at')[:5]
+    most_fresh_posts = Post.objects.annotate(
+        comments_amount=Count("comments")
+    ).order_by("-published_at")[:5]
     most_fresh_posts_ids = [post.id for post in most_fresh_posts]
-    posts_with_comments = Post.objects.filter(id__in=most_fresh_posts_ids).annotate(comments_count=Count('comments'))
-    ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+    posts_with_comments = Post.objects.filter(id__in=most_fresh_posts_ids).annotate(
+        comments_count=Count("comments")
+    )
+    ids_and_comments = posts_with_comments.values_list("id", "comments_count")
     count_for_id = dict(ids_and_comments)
 
     for post in most_fresh_posts:
         post.comments_count = count_for_id[post.id]
 
-    most_popular_tags = Tag.objects.annotate(count_tags=Count("posts")).order_by(
-        "-count_tags"
-    )[:5]
+    most_popular_tags = Tag.objects.popular()[:5]
 
     context = {
         "most_popular_posts": [
